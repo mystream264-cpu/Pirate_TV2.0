@@ -1,0 +1,60 @@
+name: Build Pirate_TV APK
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pirate_TV-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Update Latest Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Pirate_TV - Última Versión"
+          draft: false
+          prerelease: false
+          files: app/build/outputs/apk/debug/*.apk
+          body: |
+            ### Pirate_TV - Correcciones y mejoras de conexión
+            - **User-Agent unificado:** Se envía `VLC/3.0.20 LibVLC/3.0.20` en todas las peticiones (API, imágenes con Coil y streams con Media3 ExoPlayer) para evitar bloqueos por parte de servidores Xtream Codes.
+            - **Lectura segura de respuestas:** En login, categorías, catálogos e información se lee primero como String y se valida el código HTTP y formato JSON antes de parsear, eliminando errores técnicos crudos.
+            - **Diagnóstico visible en login:** Si la autenticación falla, se muestra bajo el mensaje en texto gris seleccionable la URL exacta usada (con contraseña enmascarada), el código HTTP y los primeros 120 caracteres devueltos por el servidor.
+            - **Normalización del servidor:** Corrección automática de direcciones añadiendo `http://`, limpiando espacios, barras diagonales finales y rutas pegadas por error como `/player_api.php` o `/c`.
+            - **Configuración de red:** Redirecciones activas (`followRedirects` y `followSslRedirects`), timeout de conexión de 15 s, lectura de 30 s y reintento automático ante fallos de conexión.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
