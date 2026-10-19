@@ -18,8 +18,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -41,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,6 +75,7 @@ fun LoginScreen(
 ) {
     var user by remember(initialUser) { mutableStateOf(initialUser) }
     var pass by remember(initialPass) { mutableStateOf(initialPass) }
+    var isPasswordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val hasLogo = AssetUtils.rememberAssetExists("img_logo.png")
 
@@ -146,12 +151,26 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Campo Contraseña (.linp)
+            // Campo Contraseña (.linp) con botón para ver/ocultar contraseña
             OutlinedTextField(
                 value = pass,
                 onValueChange = { pass = it },
                 placeholder = { Text("Contraseña", color = TextMuted) },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    val image = if (isPasswordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
+                    val description = if (isPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                    IconButton(
+                        onClick = { isPasswordVisible = !isPasswordVisible },
+                        modifier = Modifier.testTag("toggle_password_visibility")
+                    ) {
+                        Icon(
+                            imageVector = image,
+                            contentDescription = description,
+                            tint = if (isPasswordVisible) GoldPrimary else TextMuted
+                        )
+                    }
+                },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = TextPrimary,
@@ -162,7 +181,7 @@ fun LoginScreen(
                     unfocusedContainerColor = Color(0x8C0A0D12)
                 ),
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
+                    keyboardType = if (isPasswordVisible) KeyboardType.Text else KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
